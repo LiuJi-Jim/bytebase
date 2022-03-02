@@ -226,7 +226,7 @@ CREATE TABLE project_member (
     role_provider TEXT NOT NULL DEFAULT 'BYTEBASE',
     -- payload is determined by the type of role_provider
     payload TEXT NOT NULL DEFAULT '',
-    UNIQUE(project_id, principal_id)
+    UNIQUE(project_id, principal_id, role_provider)
 );
 
 ALTER SEQUENCE project_member_id_seq RESTART WITH 100;
