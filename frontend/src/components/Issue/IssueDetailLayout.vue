@@ -282,7 +282,7 @@ const instance = computed((): Instance => {
 });
 
 const sqlHint = (): string | undefined => {
-  if (!props.create && selectedMigrateType.value == "BASELINE") {
+  if (selectedMigrateType.value == "BASELINE") {
     return `This is a baseline migration and Bytebase won't apply the SQL to the database, it will only record a baseline history`;
   }
   if (instance.value.engine === "SNOWFLAKE") {
