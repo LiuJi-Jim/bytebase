@@ -22,7 +22,7 @@
       </button>
     </div>
 
-    <div class="space-x-2 flex items-center">
+    <div v-if="allowEditStatement" class="space-x-2 flex items-center">
       <template v-if="create">
         <label class="mt-0.5 mr-2 inline-flex items-center gap-1">
           <input
@@ -48,7 +48,7 @@
       </template>
       <template v-else>
         <button
-          v-if="allowEditStatement && !state.editing"
+          v-if="!state.editing"
           type="button"
           class="btn-icon"
           @click.prevent="beginEdit"
@@ -248,7 +248,7 @@ export default defineComponent({
     const { databaseList, tableList } = useDatabaseAndTableList();
 
     onMounted(() => {
-      if (create.value) {
+      if (create.value && allowEditStatement.value) {
         state.editing = true;
       }
     });

@@ -1,8 +1,8 @@
 import { Ref } from "vue";
 import { useRoute } from "vue-router";
 import { useDatabaseStore, useProjectStore } from "@/store";
-import { Database, Project, unknown, UNKNOWN_ID } from "@/types";
-import { IssueTemplate } from "@/plugins";
+import { Database, MigrationType, Project, unknown, UNKNOWN_ID } from "@/types";
+import { IssueTemplate, TemplateType } from "@/plugins";
 
 // validateOnly: true doesn't support empty SQL
 // so we use a fake sql to validate and then set it back to empty if needed
@@ -52,4 +52,17 @@ export const findDatabaseListByQuery = (
     databaseList.push(databaseStore.getDatabaseById(parseInt(databaseId, 10)));
   }
   return databaseList;
+};
+
+export const getMigrationTypeFromTemplateType = (
+  templateType: TemplateType
+): MigrationType => {
+  if (templateType === "bb.issue.database.data.update") {
+    return "DATA";
+  }
+  if (templateType === "bb.issue.database.schema.baseline") {
+    return "BASELINE";
+  }
+
+  return "MIGRATE";
 };

@@ -29,10 +29,14 @@ import {
 import { useIssueLogic } from "./index";
 import { taskCheckRunSummary } from "./utils";
 import { isDev } from "@/utils";
+import { useRoute } from "vue-router";
+import { getMigrationTypeFromTemplateType } from "@/plugins/issue/logic/common";
+import { TemplateType } from "@/plugins";
 
 export const useCommonLogic = () => {
   const { create, issue, selectedTask, createIssue, onStatusChanged } =
     useIssueLogic();
+  const route = useRoute();
   const currentUser = useCurrentUser();
   const databaseStore = useDatabaseStore();
   const issueStore = useIssueStore();
@@ -80,8 +84,12 @@ export const useCommonLogic = () => {
   };
 
   const allowEditStatement = computed(() => {
-    // if creating an issue, it's editable
+    // if creating an issue, it's editable when it's not "Establish baseline"
     if (create.value) {
+      const templateType = route.query.template as TemplateType;
+      if (templateType === "bb.issue.database.schema.baseline") {
+        return false;
+      }
       return true;
     }
 
@@ -89,6 +97,13 @@ export const useCommonLogic = () => {
 
     if (issueEntity.type === "bb.issue.database.restore.pitr") {
       return false;
+    }
+
+    if (issueEntity.type === "bb.issue.database.schema.update") {
+      // "Establish baseline" issue's SQL statement is not editable.
+      if (statementOfTask(selectedTask.value as Task)) {
+        return false;
+      }
     }
 
     if (issueEntity.type === "bb.issue.database.create") {
@@ -189,8 +204,11 @@ export const useCommonLogic = () => {
         earliestAllowedTs: task.earliestAllowedTs,
       };
     });
+    const migrationType = getMigrationTypeFromTemplateType(
+      route.query.template as TemplateType
+    );
     issueCreate.createContext = {
-      migrationType: taskList[0].migrationType!,
+      migrationType,
       updateSchemaDetailList: detailList,
     };
 
@@ -265,7 +283,7 @@ export const errorAssertion = () => {
   }
 };
 
-const statementOfTask = (task: Task) => {
+export const statementOfTask = (task: Task) => {
   switch (task.type) {
     case "bb.task.general":
       return ((task as Task).payload as TaskGeneralPayload).statement || "";

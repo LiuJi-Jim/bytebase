@@ -129,11 +129,10 @@ import type {
   IssueCreate,
   Instance,
   Task,
-  TaskDatabaseSchemaUpdatePayload,
   TaskCreate,
   MigrationType,
 } from "@/types";
-import { defaultTemplate, templateForType } from "@/plugins";
+import { defaultTemplate, templateForType, TemplateType } from "@/plugins";
 import {
   featureToRef,
   useInstanceStore,
@@ -148,7 +147,12 @@ import {
   TaskTypeWithStatement,
   IssueLogic,
   useBaseIssueLogic,
+  statementOfTask,
 } from "./logic";
+import {
+  ESTABLISH_BASELINE_SQL,
+  getMigrationTypeFromTemplateType,
+} from "@/plugins/issue/logic/common";
 
 const props = defineProps({
   create: {
@@ -226,14 +230,28 @@ const currentPipelineType = computed((): PipelineType => {
 });
 
 const selectedMigrateType = computed((): MigrationType => {
-  if (
-    !props.create &&
-    selectedTask.value.type == "bb.task.database.schema.update"
-  ) {
-    return (
-      (selectedTask.value as Task).payload as TaskDatabaseSchemaUpdatePayload
-    ).migrationType;
+  if (props.create) {
+    // If we are creating an issue
+    // The migrationType should be parsed from the URL query.template
+    return getMigrationTypeFromTemplateType(
+      route.query.template as TemplateType
+    );
   }
+
+  if (issue.value.type === "bb.issue.database.data.update") {
+    return "DATA";
+  }
+
+  if (issue.value.type === "bb.issue.database.schema.update") {
+    // For a schema.update issue, we judge if the issue is an "Establish baseline"
+    // by its statement.
+    const statement = statementOfTask(selectedTask.value as Task);
+    if (statement === ESTABLISH_BASELINE_SQL) {
+      return "BASELINE";
+    }
+  }
+
+  // Fallback to MIGRATE
   return "MIGRATE";
 });
 
