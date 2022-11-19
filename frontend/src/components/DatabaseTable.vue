@@ -44,7 +44,7 @@
             class="btn-icon tooltip-wrapper"
             @click.stop="gotoSQLEditor(database)"
           >
-            <heroicons-solid:terminal class="w-5 h-5" />
+            <heroicons-outline:terminal class="w-5 h-5" />
             <div class="tooltip whitespace-nowrap">
               {{ $t("sql-editor.self") }}
             </div>
