@@ -15,7 +15,11 @@
           </Pane>
         </Splitpanes>
       </n-tab-pane>
-      <n-tab-pane name="instances" :tab="$t('common.instances')">
+      <n-tab-pane
+        v-if="showInstanceView"
+        name="instances"
+        :tab="$t('common.instances')"
+      >
         <Splitpanes
           horizontal
           class="default-theme"
@@ -39,12 +43,13 @@
 <script lang="ts" setup>
 import { isUndefined } from "lodash-es";
 import { computed, ref, watchEffect } from "vue";
-import { useConnectionTreeStore } from "@/store";
+import { useConnectionTreeStore, useCurrentUser } from "@/store";
 import DatabaseTree from "./DatabaseTree.vue";
 import QueryHistoryContainer from "./QueryHistoryContainer.vue";
 import TableSchema from "./TableSchema.vue";
 import { Splitpanes, Pane } from "splitpanes";
 import { ConnectionTreeMode } from "@/types";
+import { hasWorkspacePermission } from "@/utils";
 
 const FULL_HEIGHT = 100;
 const DATABASE_PANE_SIZE = 60;
@@ -57,6 +62,14 @@ const databasePaneSize = computed(() => {
     return DATABASE_PANE_SIZE;
   }
   return FULL_HEIGHT;
+});
+const currentUser = useCurrentUser();
+
+const showInstanceView = computed(() => {
+  return hasWorkspacePermission(
+    "bb.permission.workspace.manage-database",
+    currentUser.value.role
+  );
 });
 
 const handleCloseTableSchemaPane = () => {
