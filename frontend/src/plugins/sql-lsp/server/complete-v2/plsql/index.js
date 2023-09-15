@@ -1,6 +1,5 @@
 import antlr4 from "antlr4";
 import { completion, findCursorTokenIndex } from "./completion";
-// import { PlSqlLexer, PlSqlParser } from "./parser";
 import PlSqlLexer from "./parser/PlSqlLexer";
 import PlSqlParser from "./parser/PlSqlParser";
 

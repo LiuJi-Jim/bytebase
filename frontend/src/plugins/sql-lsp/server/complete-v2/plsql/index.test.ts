@@ -10,7 +10,8 @@ const prepareTestCase = (input: string) => {
 };
 
 it("Hello World", async () => {
-  const tree = parse("SELECT 1");
+  const tree = parse("SELECT 'HELLO WORLD';");
+  console.log("tree", tree);
   expect(tree).toBeDefined();
 });
 

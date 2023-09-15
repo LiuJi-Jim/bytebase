@@ -1,6 +1,5 @@
-import DefaultErrorStrategy from "../../3rd-party/antlr4/error/DefaultErrorStrategy";
-import IntervalSet from "../../3rd-party/antlr4/misc/IntervalSet";
-// import { PlSqlLexer, PlSqlParser } from "./parser";
+import DefaultErrorStrategy from "@antlr4/error/DefaultErrorStrategy";
+import IntervalSet from "@antlr4/misc/IntervalSet";
 import PlSqlLexer from "./parser/PlSqlLexer";
 import PlSqlParser from "./parser/PlSqlParser";
 

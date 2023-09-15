@@ -1,5 +1,4 @@
 import antlr4 from "antlr4";
-// import { PlSqlLexer, PlSqlParserListener } from "./parser";
 import PlSqlLexer from "./parser/PlSqlLexer";
 import PlSqlParserListener from "./parser/PlSqlParserListener";
 
