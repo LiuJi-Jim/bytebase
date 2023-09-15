@@ -10,8 +10,11 @@
     "lint": "eslint --cache --ext .js,.ts,.tsx,.vue src",
     "lint:fix": "eslint --cache --ext .js,.ts,.tsx,.vue --fix src",
     "test": "vitest run",
+    "test:lsp": "vitest run --dir ./src/plugins/sql-lsp/server/complete-v2",
     "coverage": "vitest --coverage",
-    "copy-config-file": "sh ./scripts/copy_config_files.sh"
+    "copy-antlr4": "sh scripts/copy_antlr4.sh",
+    "copy-config-file": "sh ./scripts/copy_config_files.sh",
+    "postinstall": "npm run copy-antlr4"
   },
   "dependencies": {
     "@bytebase/vue-kbar": "0.1.8",
@@ -23,6 +26,7 @@
     "@tanstack/vue-table": "8.5.22",
     "@vueuse/core": "9.4.0",
     "abort-controller-x": "^0.4.3",
+    "antlr4": "4.13.1",
     "axios": "1.1.3",
     "bootstrap": "5.2.3",
     "canvas-confetti": "1.6.0",
@@ -88,6 +92,7 @@
     "@tailwindcss/line-clamp": "0.4.2",
     "@tailwindcss/typography": "0.5.8",
     "@trivago/prettier-plugin-sort-imports": "^4.2.0",
+    "@types/antlr4": "4.11.2",
     "@types/canvas-confetti": "1.4.3",
     "@types/d3-shape": "^3.1.2",
     "@types/dompurify": "2.4.0",
