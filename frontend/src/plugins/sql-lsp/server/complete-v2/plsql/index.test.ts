@@ -3,7 +3,7 @@ import { parse, complete } from "./index";
 
 const CARET_STR = "<|>";
 
-const prepareTestCase = (input) => {
+const prepareTestCase = (input: string) => {
   const offset = Math.max(input.indexOf(CARET_STR), 0);
   const content = input.replace(CARET_STR, "");
   return { content, offset };
@@ -22,9 +22,9 @@ it("First Blood", async () => {
 
   expect(result?.suggestion.length).toBe(1);
   const sug = result?.suggestion[0];
-  expect(sug.schema).toBe("sys");
-  expect(sug.table).toBe("user");
   expect(sug.field).toBe("name");
+  expect(sug.table).toBe("user");
+  expect(sug.schema).toBe("sys");
 
   expect(result?.fromClause.length).toBe(1);
 });

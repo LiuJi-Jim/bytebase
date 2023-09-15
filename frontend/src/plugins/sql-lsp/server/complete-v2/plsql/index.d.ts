@@ -10,6 +10,8 @@ export declare type Suggestion = {
   schema?: string;
 };
 
+export declare function parse(input: string): unknown;
+
 export declare function complete(
   inputString: string,
   caretIndex: number
