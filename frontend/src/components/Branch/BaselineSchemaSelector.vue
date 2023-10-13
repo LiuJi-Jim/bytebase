@@ -147,8 +147,11 @@ const prepareChangeHistoryList = async () => {
     return;
   }
 
-  return await changeHistoryStore.getOrFetchChangeHistoryListOfDatabase(
+  const list = await changeHistoryStore.getOrFetchChangeHistoryListOfDatabase(
     database.value.name
+  );
+  return list.filter((changeHistory) =>
+    allowedMigrationTypeList.includes(changeHistory.type)
   );
 };
 
