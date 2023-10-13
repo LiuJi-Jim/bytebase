@@ -310,15 +310,16 @@ watch(
   }
 );
 
+const fullViewChangeHistory = computed(() => {
+  const name = state.changeHistory?.name ?? "";
+  return fullViewChangeHistoryCache.value.get(name);
+});
 watch(
-  () => [state, fullViewChangeHistoryCache.value],
-  () => {
-    const fullViewChangeHistory = fullViewChangeHistoryCache.value.get(
-      state.changeHistory?.name || ""
-    );
+  [() => state, fullViewChangeHistory],
+  ([state, fullView]) => {
     emit("update", {
       ...state,
-      changeHistory: fullViewChangeHistory || state.changeHistory,
+      changeHistory: fullView ?? state.changeHistory,
     });
   },
   { deep: true }
