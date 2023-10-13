@@ -1,5 +1,6 @@
+import { asyncComputed } from "@vueuse/core";
 import { head } from "lodash-es";
-import { computed, Ref, watch } from "vue";
+import { computed, Ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { useBackupListByDatabaseName, useChangeHistoryStore } from "@/store";
 import { ComposedDatabase } from "@/types";
@@ -54,19 +55,11 @@ export const usePITRLogic = (database: Ref<ComposedDatabase>) => {
     };
   });
 
-  const prepareChangeHistoryList = async () => {
-    changeHistoryStore.fetchChangeHistoryList({
-      parent: database.value.name,
-    });
-  };
-
-  watch(() => database.value.name, prepareChangeHistoryList, {
-    immediate: true,
-  });
-
-  const changeHistoryList = computed(() => {
-    return changeHistoryStore.changeHistoryListByDatabase(database.value.name);
-  });
+  const changeHistoryList = asyncComputed(async () => {
+    return await changeHistoryStore.getOrFetchChangeHistoryListOfDatabase(
+      database.value.name
+    );
+  }, []);
 
   const lastChangeHistory = computed(() => {
     return head(changeHistoryList.value);
