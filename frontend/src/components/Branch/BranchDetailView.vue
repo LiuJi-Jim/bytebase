@@ -105,6 +105,7 @@
 </template>
 
 <script lang="ts" setup>
+import { asyncComputed } from "@vueuse/core";
 import { cloneDeep, isEqual, uniqueId } from "lodash-es";
 import { NButton, NDivider, NInput, NTooltip, useDialog, NTag } from "naive-ui";
 import { Status } from "nice-grpc-common";
@@ -121,6 +122,7 @@ import {
 import { useSchemaDesignStore } from "@/store/modules/schemaDesign";
 import { getProjectAndSchemaDesignSheetId } from "@/store/modules/v1/common";
 import { UNKNOWN_ID } from "@/types";
+import { ChangeHistoryView } from "@/types/proto/v1/database_service";
 import {
   SchemaDesign,
   SchemaDesign_Type,
@@ -185,20 +187,23 @@ const parentBranch = computed(() => {
   return undefined;
 });
 
-const changeHistory = computed(() => {
+const baselineDatabase = computed(() => {
+  return databaseStore.getDatabaseByName(schemaDesign.value.baselineDatabase);
+});
+
+const changeHistory = asyncComputed(async () => {
   const changeHistoryName = `${baselineDatabase.value.name}/changeHistories/${schemaDesign.value.baselineChangeHistoryId}`;
   if (
     schemaDesign.value.baselineChangeHistoryId &&
     schemaDesign.value.baselineChangeHistoryId !== String(UNKNOWN_ID)
   ) {
-    return changeHistoryStore.getChangeHistoryByName(changeHistoryName);
+    return await changeHistoryStore.fetchChangeHistory({
+      name: changeHistoryName,
+      view: ChangeHistoryView.CHANGE_HISTORY_VIEW_BASIC,
+    });
   }
   return undefined;
-});
-
-const baselineDatabase = computed(() => {
-  return databaseStore.getDatabaseByName(schemaDesign.value.baselineDatabase);
-});
+}, undefined);
 
 const project = computed(() => {
   return baselineDatabase.value.projectEntity;
