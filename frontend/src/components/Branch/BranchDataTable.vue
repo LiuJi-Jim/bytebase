@@ -27,6 +27,7 @@ import {
   SchemaDesign,
   SchemaDesign_Type,
 } from "@/types/proto/v1/schema_design_service";
+import { ResourceComposer } from "@/utils";
 
 type BranchRowData = {
   branch: SchemaDesign;
@@ -58,21 +59,27 @@ const isFetching = ref(true);
 watch(
   () => props.branches,
   async () => {
+    isFetching.value = true;
+    const composer = new ResourceComposer();
     for (const branch of props.branches) {
       const database = await databaseStore.getOrFetchDatabaseByName(
         branch.baselineDatabase
       );
+
       if (
         database &&
         branch.baselineChangeHistoryId &&
         branch.baselineChangeHistoryId !== String(UNKNOWN_ID)
       ) {
         const changeHistoryName = `${database.name}/changeHistories/${branch.baselineChangeHistoryId}`;
-        await changeHistoryStore.getOrFetchChangeHistoryByName(
-          changeHistoryName
-        );
+        composer.collect(changeHistoryName, async () => {
+          return await changeHistoryStore.getOrFetchChangeHistoryByName(
+            changeHistoryName
+          );
+        });
       }
     }
+    await composer.compose();
     isFetching.value = false;
   },
   {
