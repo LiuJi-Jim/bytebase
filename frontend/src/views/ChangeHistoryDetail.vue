@@ -279,7 +279,8 @@
 
 <script lang="ts" setup>
 import { toClipboard } from "@soerenmartius/vue3-clipboard";
-import { computed, reactive, watch, ref } from "vue";
+import { asyncComputed } from "@vueuse/core";
+import { computed, reactive, ref } from "vue";
 import ChangeHistoryStatusIcon from "@/components/ChangeHistory/ChangeHistoryStatusIcon.vue";
 import DiffEditor from "@/components/MonacoEditor/DiffEditor.vue";
 import TableDetailDrawer from "@/components/TableDetailDrawer.vue";
@@ -294,7 +295,7 @@ import {
 import { AffectedTable } from "@/types/changeHistory";
 import { Engine } from "@/types/proto/v1/common";
 import {
-  ChangeHistory,
+  ChangeHistoryView,
   ChangeHistory_Type,
   changeHistory_SourceToJSON,
   changeHistory_TypeToJSON,
@@ -339,9 +340,6 @@ const changeHistoryParent = computed(() => {
 const changeHistoryUID = computed(() => {
   return uidFromSlug(props.changeHistorySlug);
 });
-const changeHistoryName = computed(() => {
-  return `${changeHistoryParent.value}/changeHistories/${changeHistoryUID.value}`;
-});
 
 const affectedTables = computed(() => {
   if (changeHistory.value === undefined) {
@@ -354,21 +352,55 @@ const showSchemaSnapshot = computed(() => {
   return v1Instance.value.engine !== Engine.RISINGWAVE;
 });
 
-watch(
-  () => [changeHistoryParent.value, changeHistoryName.value],
-  async () => {
-    const database = await databaseStore.getOrFetchDatabaseByName(
-      changeHistoryParent.value
-    );
-    await dbSchemaStore.getOrFetchDatabaseMetadata(database.name);
-    await changeHistoryStore.fetchChangeHistoryList({
-      parent: changeHistoryParent.value,
-    });
-    await changeHistoryStore.fetchChangeHistory({
-      name: changeHistoryName.value,
-    });
-  },
-  { immediate: true }
+const changeHistoryState = asyncComputed(async () => {
+  const parent = `instances/${props.instance}/databases/${props.database}`;
+  const name = `${parent}/changeHistories/${changeHistoryUID.value}`;
+
+  // prepare database and dbSchema for later use
+  await databaseStore.getOrFetchDatabaseByName(parent);
+  await dbSchemaStore.getOrFetchDatabaseMetadata(parent);
+
+  const changeHistoryList = await changeHistoryStore.fetchChangeHistoryList({
+    parent,
+    pageSize: 1000,
+  });
+  const changeHistory = await changeHistoryStore.fetchChangeHistory({
+    name,
+    view: ChangeHistoryView.CHANGE_HISTORY_VIEW_BASIC,
+  });
+  if (!changeHistory) {
+    return undefined;
+  }
+
+  const index = changeHistoryList.findIndex(
+    (ch) => ch.uid === changeHistory.uid
+  );
+  if (index < 0) {
+    return {
+      changeHistory,
+    };
+  }
+  const prevName = changeHistoryList[index + 1];
+  if (!prevName) {
+    return {
+      changeHistory,
+    };
+  }
+  const previousHistory = await changeHistoryStore.fetchChangeHistory({
+    name: prevName.name,
+    view: ChangeHistoryView.CHANGE_HISTORY_VIEW_BASIC,
+  });
+  return {
+    changeHistory,
+    previousHistory,
+  };
+}, undefined);
+// changeHistory is the latest migration NOW.
+const changeHistory = computed(() => changeHistoryState.value?.changeHistory);
+// previousHistory is the last change history before the one of given id.
+// Only referenced if hasDrift is true.
+const previousHistory = computed(
+  () => changeHistoryState.value?.previousHistory
 );
 
 const getAffectedTableDisplayName = (affectedTable: AffectedTable): string => {
@@ -405,21 +437,6 @@ const prevChangeHistoryList = computed(() => {
     return [];
   }
   return changeHistoryList.slice(idx);
-});
-
-// changeHistory is the latest migration NOW.
-const changeHistory = computed((): ChangeHistory | undefined => {
-  if (prevChangeHistoryList.value.length > 0) {
-    const prev = prevChangeHistoryList.value[0];
-    return changeHistoryStore.getChangeHistoryByName(prev.name) || prev;
-  }
-  return changeHistoryStore.getChangeHistoryByName(changeHistoryName.value)!;
-});
-
-// previousHistory is the last change history before the one of given id.
-// Only referenced if hasDrift is true.
-const previousHistory = computed((): ChangeHistory | undefined => {
-  return prevChangeHistoryList.value[1];
 });
 
 // "Show diff" feature is enabled when current migration has changed the schema.
