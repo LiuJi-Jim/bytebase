@@ -106,11 +106,11 @@ func (s *SchedulerV2) scheduleAutoRolloutTasks(ctx context.Context) error {
 
 	var autoRolloutEnvironmentIDs []int
 	for _, environment := range environments {
-		policy, err := s.store.GetPipelineApprovalPolicy(ctx, environment.UID)
+		policy, err := s.store.GetRolloutPolicy(ctx, environment.UID)
 		if err != nil {
-			return errors.Wrapf(err, "failed to get approval policy for environment ID %d", environment.UID)
+			return errors.Wrapf(err, "failed to get rollout policy for environment ID %d", environment.UID)
 		}
-		if policy.Value != api.PipelineApprovalValueManualNever {
+		if !policy.Automatic {
 			continue
 		}
 		autoRolloutEnvironmentIDs = append(autoRolloutEnvironmentIDs, environment.UID)
@@ -352,6 +352,8 @@ func (s *SchedulerV2) scheduleRunningTaskRuns(ctx context.Context) error {
 
 func (s *SchedulerV2) runTaskRunOnce(ctx context.Context, taskRun *store.TaskRunMessage, task *store.TaskMessage, executor Executor) {
 	defer func() {
+		s.stateCfg.TaskRunExecutionStatuses.Delete(taskRun.ID)
+
 		s.stateCfg.RunningTaskRuns.Delete(taskRun.ID)
 		s.stateCfg.RunningTaskRunsCancelFunc.Delete(taskRun.ID)
 		s.stateCfg.Lock()
@@ -362,7 +364,7 @@ func (s *SchedulerV2) runTaskRunOnce(ctx context.Context, taskRun *store.TaskRun
 	driverCtx, cancel := context.WithCancel(ctx)
 	s.stateCfg.RunningTaskRunsCancelFunc.Store(taskRun.ID, cancel)
 
-	done, result, err := RunExecutorOnce(ctx, driverCtx, executor, task)
+	done, result, err := RunExecutorOnce(ctx, driverCtx, executor, task, taskRun.ID)
 
 	if !done && err != nil {
 		slog.Debug("Encountered transient error running task, will retry",
@@ -702,7 +704,7 @@ func (s *SchedulerV2) ClearRunningTaskRuns(ctx context.Context) error {
 		for _, taskRun := range runningTaskRuns {
 			taskRunIDs = append(taskRunIDs, taskRun.ID)
 		}
-		if err := s.store.BatchPatchTaskRunStatus(ctx, taskRunIDs, api.TaskRunCanceled, api.SystemBotID); err != nil {
+		if err := s.store.BatchCancelTaskRuns(ctx, taskRunIDs, api.SystemBotID); err != nil {
 			return errors.Wrapf(err, "failed to change task run %v's status to %s", taskRunIDs, api.TaskRunCanceled)
 		}
 	}

@@ -91,7 +91,7 @@
 <script lang="ts" setup>
 import { head, isNull, isUndefined } from "lodash-es";
 import { NEllipsis } from "naive-ui";
-import { computed, onMounted, reactive, watch } from "vue";
+import { computed, reactive, watch } from "vue";
 import { InstanceV1EngineIcon } from "@/components/v2";
 import {
   useChangeHistoryStore,
@@ -147,28 +147,32 @@ const prepareChangeHistoryList = async () => {
     return;
   }
 
-  const list = await changeHistoryStore.getOrFetchChangeHistoryListOfDatabase(
-    database.value.name
-  );
-  return list.filter((changeHistory) =>
-    allowedMigrationTypeList.includes(changeHistory.type)
-  );
+  return await changeHistoryStore.fetchChangeHistoryList({
+    parent: database.value.name,
+  });
 };
 
-onMounted(async () => {
-  if (props.baselineSchema?.databaseId) {
-    try {
-      const database = await databaseStore.getOrFetchDatabaseByUID(
-        props.baselineSchema.databaseId || ""
-      );
-      state.databaseId = database.uid;
-      state.environmentId = database.effectiveEnvironmentEntity.uid;
-      state.changeHistory = props.baselineSchema.changeHistory;
-    } catch (error) {
-      // do nothing.
+watch(
+  () => props,
+  async () => {
+    if (props.baselineSchema?.databaseId) {
+      try {
+        const database = await databaseStore.getOrFetchDatabaseByUID(
+          props.baselineSchema.databaseId || ""
+        );
+        state.databaseId = database.uid;
+        state.environmentId = database.effectiveEnvironmentEntity.uid;
+        state.changeHistory = props.baselineSchema.changeHistory;
+      } catch (error) {
+        // do nothing.
+      }
     }
+  },
+  {
+    immediate: true,
+    deep: true,
   }
-});
+);
 
 watch(
   () => props.projectId,
@@ -191,7 +195,9 @@ watch(
       return;
     }
 
-    const list = await prepareChangeHistoryList();
+    const list = (await prepareChangeHistoryList())?.filter(
+      filterChangeHistoryByType
+    );
     if (!list || list.length === 0) {
       // If database has no migration history, we will use its latest schema.
       const schema = await databaseStore.fetchDatabaseSchema(
@@ -221,6 +227,10 @@ const allowedMigrationTypeList: ChangeHistory_Type[] = [
   ChangeHistory_Type.MIGRATE,
   ChangeHistory_Type.BRANCH,
 ];
+
+const filterChangeHistoryByType = (changeHistory: ChangeHistory): boolean => {
+  return allowedMigrationTypeList.includes(changeHistory.type);
+};
 
 const isValidId = (id: any): id is string => {
   if (isNull(id) || isUndefined(id) || String(id) === String(UNKNOWN_ID)) {
@@ -256,9 +266,7 @@ const databaseChangeHistoryList = (databaseId: string) => {
   const database = databaseStore.getDatabaseByUID(databaseId);
   const list = changeHistoryStore
     .changeHistoryListByDatabase(database.name)
-    .filter((changeHistory) =>
-      allowedMigrationTypeList.includes(changeHistory.type)
-    );
+    .filter(filterChangeHistoryByType);
 
   return list;
 };

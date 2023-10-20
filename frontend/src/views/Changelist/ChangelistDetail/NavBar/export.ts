@@ -29,6 +29,7 @@ const zipFileForChangeHistory = async (
   const name = change.source;
   const { changeHistory, type, statement } =
     await useChangeHistoryStore().exportChangeHistoryFullStatementByName(name);
+  console.log("export", change, changeHistory, type, statement.length);
   if (changeHistory) {
     if (changeHistory.status !== ChangeHistory_Status.DONE) {
       return;
@@ -63,8 +64,9 @@ const zipFileForBranch = async (zip: JSZip, change: Change, index: number) => {
   if (!sheet) {
     return;
   }
-  const branch = await useSchemaDesignStore().getOrFetchSchemaDesignByName(
-    change.source
+  const branch = await useSchemaDesignStore().fetchSchemaDesignByName(
+    change.source,
+    false /* !useCache */
   );
   if (!branch) {
     return;

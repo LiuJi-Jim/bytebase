@@ -1,5 +1,5 @@
 <template>
-  <div class="space-y-3 w-full overflow-x-auto px-4 pt-1">
+  <div class="space-y-3 w-full overflow-x-auto px-4 pt-1" v-bind="$attrs">
     <div class="w-full flex flex-row justify-between items-center">
       <div class="w-full flex flex-row justify-start items-center gap-x-2">
         <NInput
@@ -25,7 +25,7 @@
           >
             <template v-if="!state.isEditing">
               <NButton @click="handleEdit">{{ $t("common.edit") }}</NButton>
-              <NButton v-if="parentBranch" @click="handleMergeBranch">{{
+              <NButton @click="handleMergeBranch">{{
                 $t("schema-designer.merge-branch")
               }}</NButton>
               <NButton type="primary" @click="handleApplySchemaDesignClick">{{
@@ -47,7 +47,9 @@
 
     <NDivider />
 
-    <div class="w-full flex flex-row justify-between items-center mt-1 gap-4">
+    <div
+      class="w-full flex flex-row justify-between items-center text-sm mt-1 gap-4"
+    >
       <div class="flex flex-row justify-start items-center opacity-80">
         <span class="mr-4 shrink-0"
           >{{ $t("schema-designer.baseline-version") }}:</span
@@ -106,7 +108,7 @@
 
 <script lang="ts" setup>
 import { asyncComputed } from "@vueuse/core";
-import { cloneDeep, isEqual, uniqueId } from "lodash-es";
+import { cloneDeep, head, isEqual, uniqueId } from "lodash-es";
 import { NButton, NDivider, NInput, NTooltip, useDialog, NTag } from "naive-ui";
 import { Status } from "nice-grpc-common";
 import { CSSProperties, computed, reactive, ref, watch } from "vue";
@@ -114,13 +116,23 @@ import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import DatabaseInfo from "@/components/DatabaseInfo.vue";
 import {
+  mergeSchemaEditToMetadata,
+  validateDatabaseMetadata,
+} from "@/components/SchemaEditorV1/utils";
+import {
   pushNotification,
   useChangeHistoryStore,
   useDatabaseV1Store,
   useSchemaEditorV1Store,
 } from "@/store";
-import { useSchemaDesignStore } from "@/store/modules/schemaDesign";
-import { getProjectAndSchemaDesignSheetId } from "@/store/modules/v1/common";
+import {
+  useSchemaDesignList,
+  useSchemaDesignStore,
+} from "@/store/modules/schemaDesign";
+import {
+  getProjectAndSchemaDesignSheetId,
+  projectNamePrefix,
+} from "@/store/modules/v1/common";
 import { UNKNOWN_ID } from "@/types";
 import { ChangeHistoryView } from "@/types/proto/v1/database_service";
 import {
@@ -128,15 +140,10 @@ import {
   SchemaDesign_Type,
 } from "@/types/proto/v1/schema_design_service";
 import { provideSQLCheckContext } from "../SQLCheck";
-import { getBaselineMetadataOfBranch } from "../SchemaEditorV1/utils/branch";
+import { fetchBaselineMetadataOfBranch } from "../SchemaEditorV1/utils/branch";
 import MergeBranchPanel from "./MergeBranchPanel.vue";
 import SchemaDesignEditor from "./SchemaDesignEditor.vue";
-import {
-  generateForkedBranchName,
-  mergeSchemaEditToMetadata,
-  validateDatabaseMetadata,
-  validateBranchName,
-} from "./utils";
+import { generateForkedBranchName, validateBranchName } from "./utils";
 
 interface LocalState {
   schemaDesignTitle: string;
@@ -147,7 +154,7 @@ interface LocalState {
 
 const props = defineProps<{
   // Should be a schema design name of main branch.
-  schemaDesignName: string;
+  branch: SchemaDesign;
   viewMode?: boolean;
 }>();
 
@@ -156,6 +163,7 @@ const router = useRouter();
 const databaseStore = useDatabaseV1Store();
 const changeHistoryStore = useChangeHistoryStore();
 const schemaDesignStore = useSchemaDesignStore();
+const { schemaDesignList } = useSchemaDesignList();
 const { runSQLCheck } = provideSQLCheckContext();
 const dialog = useDialog();
 const state = reactive<LocalState>({
@@ -171,21 +179,22 @@ const mergeBranchPanelContext = ref<{
 const schemaEditorKey = ref<string>(uniqueId());
 
 const schemaDesign = computed(() => {
-  return schemaDesignStore.getSchemaDesignByName(props.schemaDesignName || "");
+  return props.branch;
 });
 
-const parentBranch = computed(() => {
+const parentBranch = asyncComputed(async () => {
   // Show parent branch when the current branch is a personal draft and it's not the new created one.
   if (
     schemaDesign.value.type === SchemaDesign_Type.PERSONAL_DRAFT &&
     schemaDesign.value.baselineSheetName
   ) {
-    return schemaDesignStore.getSchemaDesignByName(
-      schemaDesign.value.baselineSheetName
+    return await schemaDesignStore.fetchSchemaDesignByName(
+      schemaDesign.value.baselineSheetName,
+      true /* useCache */
     );
   }
   return undefined;
-});
+}, undefined);
 
 const baselineDatabase = computed(() => {
   return databaseStore.getDatabaseByName(schemaDesign.value.baselineDatabase);
@@ -237,7 +246,7 @@ const prepareBaselineDatabase = async () => {
 };
 
 watch(
-  () => [props.schemaDesignName],
+  () => [props.branch],
   async () => {
     state.schemaDesignTitle = schemaDesign.value.title;
     await prepareBaselineDatabase();
@@ -246,8 +255,9 @@ watch(
       schemaDesign.value.type === SchemaDesign_Type.PERSONAL_DRAFT &&
       schemaDesign.value.baselineSheetName
     ) {
-      await schemaDesignStore.getOrFetchSchemaDesignByName(
-        schemaDesign.value.baselineSheetName
+      await schemaDesignStore.fetchSchemaDesignByName(
+        schemaDesign.value.baselineSheetName,
+        true /* useCache */
       );
     }
   },
@@ -283,6 +293,7 @@ const handleBranchTitleInputBlur = async () => {
       SchemaDesign.fromPartial({
         name: schemaDesign.value.name,
         title: state.schemaDesignTitle,
+        baselineDatabase: schemaDesign.value.baselineDatabase,
       }),
       updateMask
     );
@@ -296,13 +307,29 @@ const handleBranchTitleInputBlur = async () => {
 };
 
 const handleMergeBranch = () => {
-  if (!parentBranch.value) {
+  const tempList = schemaDesignList.value.filter((item) => {
+    const [projectName] = getProjectAndSchemaDesignSheetId(item.name);
+    return (
+      `${projectNamePrefix}${projectName}` === project.value.name &&
+      item.engine === schemaDesign.value.engine &&
+      item.name !== schemaDesign.value.name
+    );
+  });
+  const targetBranchName = parentBranch.value
+    ? parentBranch.value.name
+    : head(tempList)?.name;
+  if (!targetBranchName) {
+    pushNotification({
+      module: "bytebase",
+      style: "CRITICAL",
+      title: "No branch to merge.",
+    });
     return;
   }
 
   mergeBranchPanelContext.value = {
     sourceBranchName: schemaDesign.value.name,
-    targetBranchName: parentBranch.value.name,
+    targetBranchName: targetBranchName,
   };
   state.showDiffEditor = true;
 };
@@ -320,7 +347,9 @@ const handleCancelEdit = async () => {
     return;
   }
 
-  const baselineMetadata = getBaselineMetadataOfBranch(branchSchema.branch);
+  const baselineMetadata = await fetchBaselineMetadataOfBranch(
+    branchSchema.branch
+  );
   const mergedMetadata = mergeSchemaEditToMetadata(
     branchSchema.schemaList,
     cloneDeep(baselineMetadata)
@@ -350,7 +379,9 @@ const handleSaveBranch = async () => {
     return;
   }
 
-  const baselineMetadata = getBaselineMetadataOfBranch(branchSchema.branch);
+  const baselineMetadata = await fetchBaselineMetadataOfBranch(
+    branchSchema.branch
+  );
   const mergedMetadata = mergeSchemaEditToMetadata(
     branchSchema.schemaList,
     cloneDeep(baselineMetadata)
@@ -368,6 +399,7 @@ const handleSaveBranch = async () => {
   if (!isEqual(mergedMetadata, schemaDesign.value.schemaMetadata)) {
     updateMask.push("metadata");
   }
+
   if (updateMask.length !== 0) {
     if (schemaDesign.value.type === SchemaDesign_Type.MAIN_BRANCH) {
       const branchName = generateForkedBranchName(schemaDesign.value);
@@ -375,6 +407,7 @@ const handleSaveBranch = async () => {
         ...schemaDesign.value,
         baselineSchema: schemaDesign.value.schema,
         schemaMetadata: mergedMetadata,
+        baselineSchemaMetadata: baselineMetadata,
         title: branchName,
       });
       try {
@@ -430,13 +463,17 @@ const handleSaveBranch = async () => {
       // Delete the draft after merged.
       await schemaDesignStore.deleteSchemaDesign(newBranch.name);
       // Fetch the latest schema design after merged.
-      await schemaDesignStore.fetchSchemaDesignByName(schemaDesign.value.name);
+      await schemaDesignStore.fetchSchemaDesignByName(
+        schemaDesign.value.name,
+        false /* !useCache */
+      );
     } else {
       await schemaDesignStore.updateSchemaDesign(
         SchemaDesign.fromPartial({
           name: schemaDesign.value.name,
           title: state.schemaDesignTitle,
           engine: schemaDesign.value.engine,
+          baselineDatabase: schemaDesign.value.baselineDatabase,
           baselineSchema: schemaDesign.value.baselineSchema,
           schemaMetadata: mergedMetadata,
         }),
@@ -478,7 +515,7 @@ const handleApplySchemaDesignClick = () => {
 const deleteSchemaDesign = async () => {
   await schemaDesignStore.deleteSchemaDesign(schemaDesign.value.name);
   router.replace({
-    name: "workspace.branch",
+    name: "workspace.branch.dashboard",
   });
 };
 </script>

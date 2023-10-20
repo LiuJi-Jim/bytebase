@@ -26,7 +26,6 @@ import {
   useLegacyInstanceStore,
   useRouterStore,
   useDBSchemaV1Store,
-  useConnectionTreeStore,
   useOnboardingStateStore,
   useTabStore,
   useIdentityProviderStore,
@@ -40,6 +39,7 @@ import {
   useChangeHistoryStore,
   useChangelistStore,
   useSchemaDesignStore,
+  useSQLEditorTreeStore,
 } from "@/store";
 import {
   DEFAULT_PROJECT_ID,
@@ -294,7 +294,7 @@ const routes: Array<RouteRecordRaw> = [
               content: () => import("../views/branch/BranchDetail.vue"),
               leftSidebar: DashboardSidebar,
             },
-            props: { content: true },
+            props: { content: false },
           },
           {
             path: "sync-schema",
@@ -1446,7 +1446,7 @@ router.beforeEach((to, from, next) => {
     // Prepare the data for the branch detail page.
     const name = `projects/${to.params.projectName}/schemaDesigns/${to.params.branchName}`;
     useSchemaDesignStore()
-      .getOrFetchSchemaDesignByName(name)
+      .fetchSchemaDesignByName(name, false /* !useCache */)
       .then((branch) => {
         if (branch) {
           next();
@@ -1584,13 +1584,13 @@ router.beforeEach((to, from, next) => {
     const databaseId = idFromSlug(databaseSlug);
     if (Number.isNaN(databaseId)) {
       // Connected to instance
-      useConnectionTreeStore()
+      useSQLEditorTreeStore()
         .fetchConnectionByInstanceId(String(instanceId))
         .then(() => next())
         .catch(() => next());
     } else {
       // Connected to db
-      useConnectionTreeStore()
+      useSQLEditorTreeStore()
         .fetchConnectionByInstanceIdAndDatabaseId(
           String(instanceId),
           String(databaseId)

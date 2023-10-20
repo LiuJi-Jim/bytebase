@@ -1,6 +1,6 @@
 module github.com/bytebase/bytebase
 
-go 1.21.2
+go 1.21.3
 
 require (
 	cloud.google.com/go/spanner v1.49.0
@@ -13,8 +13,8 @@ require (
 	github.com/aws/aws-sdk-go-v2/feature/s3/manager v1.11.87
 	github.com/aws/aws-sdk-go-v2/service/s3 v1.40.0
 	github.com/blang/semver/v4 v4.0.0
-	github.com/bytebase/mysql-parser v0.0.0-20230612050356-4592d9ba30da
-	github.com/bytebase/plsql-parser v0.0.0-20230706061841-c93470b91bee
+	github.com/bytebase/mysql-parser v0.0.0-20231013095254-61b0903123c6
+	github.com/bytebase/plsql-parser v0.0.0-20231016074331-18d9b8d3c031
 	github.com/bytebase/postgresql-parser v0.0.0-20230926094140-aa337757cdd0
 	github.com/bytebase/snowsql-parser v0.0.0-20230706111031-cafd8faa2dc9
 	github.com/cenkalti/backoff/v4 v4.2.1
@@ -161,7 +161,7 @@ require (
 	github.com/aws/smithy-go v1.14.2 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/bmizerany/assert v0.0.0-20160611221934-b7ed37b82869 // indirect
-	github.com/bytebase/tsql-parser v0.0.0-20230717060948-f266bf0280e2
+	github.com/bytebase/tsql-parser v0.0.0-20231019070007-fc13b1c3c56d
 	github.com/census-instrumentation/opencensus-proto v0.4.1 // indirect
 	github.com/cespare/xxhash/v2 v2.2.0 // indirect
 	github.com/cncf/udpa/go v0.0.0-20220112060539-c52dc94e7fbe // indirect

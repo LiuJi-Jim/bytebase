@@ -44,6 +44,7 @@
     - [MaskingRulePolicy](#bytebase-v1-MaskingRulePolicy)
     - [MaskingRulePolicy.MaskingRule](#bytebase-v1-MaskingRulePolicy-MaskingRule)
     - [Policy](#bytebase-v1-Policy)
+    - [RolloutPolicy](#bytebase-v1-RolloutPolicy)
     - [SQLReviewPolicy](#bytebase-v1-SQLReviewPolicy)
     - [SQLReviewRule](#bytebase-v1-SQLReviewRule)
     - [SlowQueryPolicy](#bytebase-v1-SlowQueryPolicy)
@@ -504,6 +505,7 @@
     - [Task.DatabaseDataUpdate.RollbackSqlStatus](#bytebase-v1-Task-DatabaseDataUpdate-RollbackSqlStatus)
     - [Task.Status](#bytebase-v1-Task-Status)
     - [Task.Type](#bytebase-v1-Task-Type)
+    - [TaskRun.ExecutionStatus](#bytebase-v1-TaskRun-ExecutionStatus)
     - [TaskRun.Status](#bytebase-v1-TaskRun-Status)
   
     - [RolloutService](#bytebase-v1-RolloutService)
@@ -524,6 +526,7 @@
     - [UpdateSchemaDesignRequest](#bytebase-v1-UpdateSchemaDesignRequest)
   
     - [SchemaDesign.Type](#bytebase-v1-SchemaDesign-Type)
+    - [SchemaDesignView](#bytebase-v1-SchemaDesignView)
   
     - [SchemaDesignService](#bytebase-v1-SchemaDesignService)
   
@@ -560,14 +563,18 @@
     - [ListSettingsRequest](#bytebase-v1-ListSettingsRequest)
     - [ListSettingsResponse](#bytebase-v1-ListSettingsResponse)
     - [MaskingAlgorithmSetting](#bytebase-v1-MaskingAlgorithmSetting)
-    - [MaskingAlgorithmSetting.MaskingAlgorithm](#bytebase-v1-MaskingAlgorithmSetting-MaskingAlgorithm)
+    - [MaskingAlgorithmSetting.Algorithm](#bytebase-v1-MaskingAlgorithmSetting-Algorithm)
+    - [MaskingAlgorithmSetting.Algorithm.FullMask](#bytebase-v1-MaskingAlgorithmSetting-Algorithm-FullMask)
+    - [MaskingAlgorithmSetting.Algorithm.MD5Mask](#bytebase-v1-MaskingAlgorithmSetting-Algorithm-MD5Mask)
+    - [MaskingAlgorithmSetting.Algorithm.RangeMask](#bytebase-v1-MaskingAlgorithmSetting-Algorithm-RangeMask)
+    - [MaskingAlgorithmSetting.Algorithm.RangeMask.Slice](#bytebase-v1-MaskingAlgorithmSetting-Algorithm-RangeMask-Slice)
     - [SMTPMailDeliverySettingValue](#bytebase-v1-SMTPMailDeliverySettingValue)
     - [SchemaTemplateSetting](#bytebase-v1-SchemaTemplateSetting)
     - [SchemaTemplateSetting.ColumnType](#bytebase-v1-SchemaTemplateSetting-ColumnType)
     - [SchemaTemplateSetting.FieldTemplate](#bytebase-v1-SchemaTemplateSetting-FieldTemplate)
     - [SchemaTemplateSetting.TableTemplate](#bytebase-v1-SchemaTemplateSetting-TableTemplate)
-    - [SemanticTypesSetting](#bytebase-v1-SemanticTypesSetting)
-    - [SemanticTypesSetting.SemanticType](#bytebase-v1-SemanticTypesSetting-SemanticType)
+    - [SemanticTypeSetting](#bytebase-v1-SemanticTypeSetting)
+    - [SemanticTypeSetting.SemanticType](#bytebase-v1-SemanticTypeSetting-SemanticType)
     - [SetSettingRequest](#bytebase-v1-SetSettingRequest)
     - [Setting](#bytebase-v1-Setting)
     - [Value](#bytebase-v1-Value)
@@ -1108,6 +1115,8 @@ When paginating, all other parameters provided to `GetPolicies` must match the c
 | table | [string](#string) |  |  |
 | column | [string](#string) |  |  |
 | masking_level | [MaskingLevel](#bytebase-v1-MaskingLevel) |  |  |
+| full_masking_algorithm_id | [string](#string) |  |  |
+| partial_masking_algorithm_id | [string](#string) |  |  |
 
 
 
@@ -1210,6 +1219,7 @@ MaskingExceptionPolicy is the allowlist of users who can access sensitive data.
 | type | [PolicyType](#bytebase-v1-PolicyType) |  |  |
 | workspace_iam_policy | [IamPolicy](#bytebase-v1-IamPolicy) |  |  |
 | deployment_approval_policy | [DeploymentApprovalPolicy](#bytebase-v1-DeploymentApprovalPolicy) |  |  |
+| rollout_policy | [RolloutPolicy](#bytebase-v1-RolloutPolicy) |  |  |
 | backup_plan_policy | [BackupPlanPolicy](#bytebase-v1-BackupPlanPolicy) |  |  |
 | masking_policy | [MaskingPolicy](#bytebase-v1-MaskingPolicy) |  |  |
 | sql_review_policy | [SQLReviewPolicy](#bytebase-v1-SQLReviewPolicy) |  |  |
@@ -1220,6 +1230,24 @@ MaskingExceptionPolicy is the allowlist of users who can access sensitive data.
 | enforce | [bool](#bool) |  |  |
 | resource_type | [PolicyResourceType](#bytebase-v1-PolicyResourceType) |  | The resource type for the policy. |
 | resource_uid | [string](#string) |  | The system-assigned, unique identifier for the resource. |
+
+
+
+
+
+
+<a name="bytebase-v1-RolloutPolicy"></a>
+
+### RolloutPolicy
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| automatic | [bool](#bool) |  |  |
+| workspace_roles | [string](#string) | repeated |  |
+| project_roles | [string](#string) | repeated |  |
+| issue_roles | [string](#string) | repeated | roles/LAST_APPROVER roles/CREATOR |
 
 
 
@@ -1376,6 +1404,7 @@ The policy&#39;s `name` field is used to identify the instance to update. Format
 | POLICY_TYPE_UNSPECIFIED | 0 |  |
 | WORKSPACE_IAM | 1 |  |
 | DEPLOYMENT_APPROVAL | 2 |  |
+| ROLLOUT_POLICY | 11 |  |
 | BACKUP_PLAN | 3 |  |
 | SQL_REVIEW | 4 |  |
 | MASKING | 5 |  |
@@ -2632,7 +2661,10 @@ ColumnMetadata is the metadata for columns.
 | ----- | ---- | ----- | ----------- |
 | name | [string](#string) |  | The name is the name of a column. |
 | position | [int32](#int32) |  | The position is the position in columns. |
-| default | [google.protobuf.StringValue](#google-protobuf-StringValue) |  | The default is the default of a column. Use google.protobuf.StringValue to distinguish between an empty string default value or no default. |
+| has_default | [bool](#bool) |  |  |
+| default_null | [bool](#bool) |  |  |
+| default_string | [string](#string) |  |  |
+| default_expression | [string](#string) |  |  |
 | nullable | [bool](#bool) |  | The nullable is the nullable of a column. |
 | type | [string](#string) |  | The type is the type of a column. |
 | character_set | [string](#string) |  | The character_set is the character_set of a column. |
@@ -8017,6 +8049,9 @@ When paginating, all other parameters provided to `ListRolloutTaskRuns` must mat
 | detail | [string](#string) |  | Below are the results of a task run. |
 | change_history | [string](#string) |  | The resource name of the change history Format: instances/{instance}/databases/{database}/changeHistories/{changeHistory} |
 | schema_version | [string](#string) |  |  |
+| execution_status | [TaskRun.ExecutionStatus](#bytebase-v1-TaskRun-ExecutionStatus) |  |  |
+| execution_status_update_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | Last execution status update timestamp. |
+| start_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
 
 
 
@@ -8159,6 +8194,20 @@ Type is the database change type.
 | DATABASE_BACKUP | 9 | use payload DatabaseBackup |
 | DATABASE_RESTORE_RESTORE | 10 | use payload DatabaseRestoreRestore |
 | DATABASE_RESTORE_CUTOVER | 11 | use payload nil |
+
+
+
+<a name="bytebase-v1-TaskRun-ExecutionStatus"></a>
+
+### TaskRun.ExecutionStatus
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| EXECUTION_STATUS_UNSPECIFIED | 0 |  |
+| PRE_EXECUTING | 1 |  |
+| EXECUTING | 2 |  |
+| POST_EXECUTING | 3 |  |
 
 
 
@@ -8306,6 +8355,7 @@ Type is the database change type.
 | page_token | [string](#string) |  | A page token, received from a previous `ListSchemaDesigns` call. Provide this to retrieve the subsequent page.
 
 When paginating, all other parameters provided to `ListSchemaDesigns` must match the call that provided the page token. |
+| view | [SchemaDesignView](#bytebase-v1-SchemaDesignView) |  |  |
 
 
 
@@ -8451,6 +8501,19 @@ The schema design&#39;s `name` field is used to identify the schema design to up
 | TYPE_UNSPECIFIED | 0 |  |
 | MAIN_BRANCH | 1 | Main branch type is the main version of schema design. And only allow to be updated/merged with personal drafts. |
 | PERSONAL_DRAFT | 2 | Personal draft type is a copy of the main branch type schema designs. |
+
+
+
+<a name="bytebase-v1-SchemaDesignView"></a>
+
+### SchemaDesignView
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| SCHEMA_DESIGN_VIEW_UNSPECIFIED | 0 | The default / unset value. The API will default to the BASIC view. |
+| SCHEMA_DESIGN_VIEW_BASIC | 1 | Exclude schema, baseline_schema. |
+| SCHEMA_DESIGN_VIEW_FULL | 2 | Include everything. |
 
 
  
@@ -8933,26 +8996,90 @@ When paginating, all other parameters provided to `ListSettings` must match the 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| algorithms | [MaskingAlgorithmSetting.MaskingAlgorithm](#bytebase-v1-MaskingAlgorithmSetting-MaskingAlgorithm) | repeated |  |
+| algorithms | [MaskingAlgorithmSetting.Algorithm](#bytebase-v1-MaskingAlgorithmSetting-Algorithm) | repeated | algorithms is the list of masking algorithms. |
 
 
 
 
 
 
-<a name="bytebase-v1-MaskingAlgorithmSetting-MaskingAlgorithm"></a>
+<a name="bytebase-v1-MaskingAlgorithmSetting-Algorithm"></a>
 
-### MaskingAlgorithmSetting.MaskingAlgorithm
+### MaskingAlgorithmSetting.Algorithm
 
 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| id | [string](#string) |  | id is the uuid for semantic type. |
-| title | [string](#string) |  | the title of the masking algorithm, it should not be empty. |
-| description | [string](#string) |  | the description of the masking algorithm, it can be empty.
+| id | [string](#string) |  | id is the uuid for masking algorithm. |
+| title | [string](#string) |  | title is the title for masking algorithm. |
+| description | [string](#string) |  | description is the description for masking algorithm. |
+| category | [string](#string) |  | Category is the category for masking algorithm. Currently, it accepts 2 categories only: MASKING and HASHING. The range of accepted Payload is decided by the category. Mask: FullMask, RangeMask Hash: MD5Mask |
+| full_mask | [MaskingAlgorithmSetting.Algorithm.FullMask](#bytebase-v1-MaskingAlgorithmSetting-Algorithm-FullMask) |  |  |
+| range_mask | [MaskingAlgorithmSetting.Algorithm.RangeMask](#bytebase-v1-MaskingAlgorithmSetting-Algorithm-RangeMask) |  |  |
+| md5_mask | [MaskingAlgorithmSetting.Algorithm.MD5Mask](#bytebase-v1-MaskingAlgorithmSetting-Algorithm-MD5Mask) |  |  |
 
-If we need to support the custom masking algorithm, we need to define the payload to store the algorithm likes javascript code, python code, etc. |
+
+
+
+
+
+<a name="bytebase-v1-MaskingAlgorithmSetting-Algorithm-FullMask"></a>
+
+### MaskingAlgorithmSetting.Algorithm.FullMask
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| substitution | [string](#string) |  | substitution is the string used to replace the original value, the max length of the string is 16 bytes. |
+
+
+
+
+
+
+<a name="bytebase-v1-MaskingAlgorithmSetting-Algorithm-MD5Mask"></a>
+
+### MaskingAlgorithmSetting.Algorithm.MD5Mask
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| salt | [string](#string) |  | salt is the salt value to generate a different hash that with the word alone. |
+
+
+
+
+
+
+<a name="bytebase-v1-MaskingAlgorithmSetting-Algorithm-RangeMask"></a>
+
+### MaskingAlgorithmSetting.Algorithm.RangeMask
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| slices | [MaskingAlgorithmSetting.Algorithm.RangeMask.Slice](#bytebase-v1-MaskingAlgorithmSetting-Algorithm-RangeMask-Slice) | repeated | We store it as a repeated field to face the fact that the original value may have multiple parts should be masked. But frontend can be started with a single rule easily. |
+
+
+
+
+
+
+<a name="bytebase-v1-MaskingAlgorithmSetting-Algorithm-RangeMask-Slice"></a>
+
+### MaskingAlgorithmSetting.Algorithm.RangeMask.Slice
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| start | [int32](#int32) |  | start is the start index of the original value, start from 0 and should be less than stop. |
+| end | [int32](#int32) |  | stop is the stop index of the original value, should be less than the length of the original value. |
+| substitution | [string](#string) |  | OriginalValue[start:end) would be replaced with replace_with. |
 
 
 
@@ -9056,24 +9183,24 @@ If we need to support the custom masking algorithm, we need to define the payloa
 
 
 
-<a name="bytebase-v1-SemanticTypesSetting"></a>
+<a name="bytebase-v1-SemanticTypeSetting"></a>
 
-### SemanticTypesSetting
+### SemanticTypeSetting
 
 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| types | [SemanticTypesSetting.SemanticType](#bytebase-v1-SemanticTypesSetting-SemanticType) | repeated |  |
+| types | [SemanticTypeSetting.SemanticType](#bytebase-v1-SemanticTypeSetting-SemanticType) | repeated |  |
 
 
 
 
 
 
-<a name="bytebase-v1-SemanticTypesSetting-SemanticType"></a>
+<a name="bytebase-v1-SemanticTypeSetting-SemanticType"></a>
 
-### SemanticTypesSetting.SemanticType
+### SemanticTypeSetting.SemanticType
 
 
 
@@ -9142,7 +9269,7 @@ The data in setting value.
 | external_approval_setting_value | [ExternalApprovalSetting](#bytebase-v1-ExternalApprovalSetting) |  |  |
 | schema_template_setting_value | [SchemaTemplateSetting](#bytebase-v1-SchemaTemplateSetting) |  |  |
 | data_classification_setting_value | [DataClassificationSetting](#bytebase-v1-DataClassificationSetting) |  |  |
-| semantic_types_setting_value | [SemanticTypesSetting](#bytebase-v1-SemanticTypesSetting) |  |  |
+| semantic_type_setting_value | [SemanticTypeSetting](#bytebase-v1-SemanticTypeSetting) |  |  |
 | masking_algorithm_setting_value | [MaskingAlgorithmSetting](#bytebase-v1-MaskingAlgorithmSetting) |  |  |
 
 

@@ -82,7 +82,8 @@
       "developer": "Developer",
       "member": "Member",
       "exporter": "Exporter",
-      "querier": "Querier"
+      "querier": "Querier",
+      "releaser": "Releaser"
     },
     "assignee": "Assignee",
     "revert": "Revert",
@@ -314,7 +315,7 @@
       "summary-report": "Summary report"
     },
     "rollout-time": "Rollout time",
-    "earliest-allowed-time-hint": "'@:{'task.rollout-time'}' specifies the expected execution timing for this task. If this field is not specified, the task will be executed once it has passed all other gating criteria.",
+    "earliest-allowed-time-hint": "@:{'task.rollout-time'} is when you want a task to run; if unspecified, it runs when all criteria are met.",
     "earliest-allowed-time-unset": "Unset",
     "comment": "Comment",
     "invoker": "Invoker",
@@ -374,7 +375,8 @@
     },
     "action-failed-in-current-stage": "{action} failed tasks in current stage",
     "action-all-tasks-in-current-stage": "{action} all tasks in current stage",
-    "cancel-task": "Cancel task | Cancel tasks"
+    "cancel-task": "Cancel task | Cancel tasks",
+    "created": "Created"
   },
   "banner": {
     "update-license": "Update license",
@@ -987,7 +989,9 @@
       "back-to-edit": "Back to edit",
       "continue-anyway": "Continue anyway",
       "sql-review-violations": "SQL Review Violations"
-    }
+    },
+    "no-assignee-candidates": "There is no valid assignee candidates in this project. Please contact the project owner.",
+    "allow-any-following-roles-to-be-assignee": "Allow any following roles to be assignee"
   },
   "alter-schema": {
     "vcs-enabled": "This project has enabled VCS based version control and selecting database below will navigate you to the corresponding Git repository to initiate the change process.",
@@ -1266,6 +1270,23 @@
       "assignee-group": {
         "workspace-owner-or-dba": "Require rolling out from DBA or workspace owner.",
         "project-owner": "Require rolling out from project owner."
+      },
+      "manual-by-dba-or-workspace-owner": "Require rolling out from DBA or workspace owner.",
+      "manual-by-project-owner": "Project owner",
+      "manual-by-project-releaser": "Project releaser",
+      "manual-by-issue-creator": "Issue creator",
+      "manual-by-last-approver": "Manual rollout by the last approver from the custom approval flow",
+      "manual-by-fixed-roles": "Manual rollout by fixed roles",
+      "manual-by-fixed-roles-info": "Allow any of the following selected roles to click the \"Rollout\" button, and then the change will be executed.",
+      "manual-by-dba": "DBA",
+      "manual-by-workspace-owner": "Workspace owner",
+      "role": {
+        "workspace-owner": "Workspace owner",
+        "dba": "DBA",
+        "project-owner": "Project owner",
+        "project-releaser": "Project releaser",
+        "issue-creator": "Issue creator",
+        "last-approver": "The last approver from the custom approval flow"
       }
     },
     "backup": {
@@ -2064,7 +2085,8 @@
       "select-database": "Select database below",
       "description": "Batch query {count} additional databases under {project}."
     },
-    "executing-query": "Executing query"
+    "executing-query": "Executing query",
+    "grouping": "Grouping"
   },
   "schema-editor": {
     "self": "Schema Editor",
@@ -2118,6 +2140,14 @@
       "foreign-key": "Foreign Key",
       "classification": "Classification"
     },
+    "default": {
+      "no-default": "No default",
+      "empty-string": "Empty string",
+      "expression": "Expression",
+      "zero": "0",
+      "true": "True",
+      "false": "False"
+    },
     "nothing-changed": "Nothing changed",
     "message": {
       "invalid-schema-name": "Invalid schema name",
@@ -2142,7 +2172,7 @@
     "select-reference-column": "Select a column to reference to"
   },
   "label": {
-    "empty-label-value": "<Empty Value>",
+    "empty-label-value": "Empty",
     "no-label": "No labels",
     "error": {
       "key-necessary": "Key is required",
@@ -2982,7 +3012,10 @@
       "description": "System defined project querier role"
     },
     "select-role": "Select role",
-    "expired-tip": "The role might has been expired."
+    "expired-tip": "The role might has been expired.",
+    "releaser": {
+      "description": "System defined project releaser role"
+    }
   },
   "database-group": {
     "self": "Database Group",
@@ -3021,6 +3054,7 @@
     "schema-version": "Schema version",
     "personal-draft": "Personal draft",
     "baseline-version": "Baseline",
+    "baseline-version-from-parent": "Baseline from parent branch",
     "new-branch": "New branch",
     "parent-branch": "Parent",
     "save-draft": "Save draft",
