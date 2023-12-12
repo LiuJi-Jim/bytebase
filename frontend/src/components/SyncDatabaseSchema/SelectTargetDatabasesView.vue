@@ -2,11 +2,13 @@
   <div
     class="select-target-database-view h-full overflow-y-hidden flex flex-col gap-y-4"
   >
-    <div class="w-full flex flex-col md:flex-row gap-y-4 md:gap-8">
+    <div class="w-full flex flex-col md:flex-row gap-y-4 md:gap-8 text-sm">
       <span>{{ $t("database.sync-schema.source-schema") }}</span>
       <template
         v-if="
-          sourceSchemaType === 'SCHEMA_HISTORY_VERSION' && databaseSourceSchema
+          false &&
+          sourceSchemaType === 'SCHEMA_HISTORY_VERSION' &&
+          databaseSourceSchema
         "
       >
         <div class="space-y-2">
@@ -51,7 +53,7 @@
           </div>
         </div>
       </template>
-      <template v-else>
+      <template v-else-if="false">
         <div>
           <span>{{ $t("common.project") }} - </span>
           <a
@@ -71,6 +73,7 @@
           </span>
         </div>
       </template>
+      <div>分支 feat/employee-add-phone</div>
     </div>
 
     <div

@@ -1,11 +1,13 @@
 <template>
   <div class="w-full h-full flex flex-col gap-y-2">
     <NTabs v-model:value="tab">
-      <NTab name="diff">
+      <NTab v-if="false" name="diff">
         {{ $t("database.sync-schema.schema-change") }}
       </NTab>
+      <NTab name="select-sync-object"> 选择同步对象 </NTab>
       <NTab name="ddl">
-        {{ $t("database.sync-schema.generated-ddl-statement") }}
+        <!-- {{ $t("database.sync-schema.generated-ddl-statement") }} -->
+        预览 DDL 语句
       </NTab>
     </NTabs>
 

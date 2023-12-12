@@ -1,11 +1,5 @@
 <template>
   <div class="w-full h-full overflow-hidden flex flex-col">
-    <p class="text-sm text-gray-500">
-      {{ $t("database.sync-schema.description") }}
-      <LearnMoreLink
-        url="https://www.bytebase.com/docs/change-database/synchronize-schema?source=console"
-      />
-    </p>
     <BBStepTab
       ref="bbStepTabRef"
       class="py-4 flex-1 overflow-hidden flex flex-col"
@@ -25,26 +19,33 @@
               :value="'SCHEMA_HISTORY_VERSION'"
               :label="$t('database.sync-schema.schema-history-version')"
             />
+            <NRadio :value="'BRANCH'" :label="'分支'" />
             <NRadio :value="'RAW_SQL'" :label="$t('schema-editor.raw-sql')" />
           </NRadioGroup>
         </div>
-        <DatabaseSchemaSelector
-          v-if="state.sourceSchemaType === 'SCHEMA_HISTORY_VERSION'"
-          :select-state="changeHistorySourceSchemaState"
-          :disable-project-select="!!project"
-          @update="handleChangeHistorySchameVersionChanges"
-        />
-        <RawSQLEditor
-          v-if="state.sourceSchemaType === 'RAW_SQL'"
-          :project-id="rawSQLState.projectId"
-          :engine="rawSQLState.engine"
-          :statement="rawSQLState.statement"
-          :sheet-id="rawSQLState.sheetId"
-          :disable-project-select="!!project"
-          @update="handleRawSQLStateChange"
-        />
+        <template v-if="project">
+          <DatabaseSchemaSelector
+            v-if="state.sourceSchemaType === 'SCHEMA_HISTORY_VERSION'"
+            :select-state="changeHistorySourceSchemaState"
+            :disable-project-select="!!project"
+            @update="handleChangeHistorySchameVersionChanges"
+          />
+          <BranchSelector
+            v-if="state.sourceSchemaType === 'BRANCH'"
+            :project="project"
+          />
+          <RawSQLEditor
+            v-if="state.sourceSchemaType === 'RAW_SQL'"
+            :project-id="rawSQLState.projectId"
+            :engine="rawSQLState.engine"
+            :statement="rawSQLState.statement"
+            :sheet-id="rawSQLState.sheetId"
+            :disable-project-select="!!project"
+            @update="handleRawSQLStateChange"
+          />
+        </template>
       </template>
-      <template #1>
+      <!-- <template #1>
         <SelectTargetDatabasesView
           ref="targetDatabaseViewRef"
           :project-id="projectId!"
@@ -52,7 +53,18 @@
           :database-source-schema="(changeHistorySourceSchemaState as any)"
           :raw-sql-state="rawSQLState"
         />
+      </template> -->
+      <template #1>
+        <SelectSyncObject />
       </template>
+      <!-- <template #2>
+        <SelectSyncObject />
+      </template>
+      <template #3>
+        <div class="w-full h-full relative">
+          <MonacoEditor :content="''" class="w-full h-full border rounded-sm" />
+        </div>
+      </template> -->
     </BBStepTab>
   </div>
 </template>
@@ -68,8 +80,11 @@ import { BBStepTab } from "@/bbkit";
 import { useProjectV1Store } from "@/store";
 import { UNKNOWN_ID, ComposedProject } from "@/types";
 import { Engine } from "@/types/proto/v1/common";
+import BranchSelector from "../Branch/BranchSelector.vue";
+import { MonacoEditor } from "../MonacoEditor";
 import DatabaseSchemaSelector from "./DatabaseSchemaSelector.vue";
 import RawSQLEditor from "./RawSQLEditor.vue";
+import SelectSyncObject from "./SelectSyncObject";
 import SelectTargetDatabasesView from "./SelectTargetDatabasesView.vue";
 import {
   ChangeHistorySourceSchema,
@@ -83,7 +98,7 @@ const SELECT_TARGET_DATABASE_LIST = 1;
 type Step = typeof SELECT_SOURCE_SCHEMA | typeof SELECT_TARGET_DATABASE_LIST;
 
 interface LocalState {
-  sourceSchemaType: SourceSchemaType;
+  sourceSchemaType: SourceSchemaType | "BRANCH";
   currentStep: Step;
 }
 
@@ -100,7 +115,8 @@ const projectStore = useProjectV1Store();
 const targetDatabaseViewRef =
   ref<InstanceType<typeof SelectTargetDatabasesView>>();
 const state = reactive<LocalState>({
-  sourceSchemaType: props.sourceSchemaType ?? "SCHEMA_HISTORY_VERSION",
+  // sourceSchemaType: props.sourceSchemaType ?? "SCHEMA_HISTORY_VERSION",
+  sourceSchemaType: "BRANCH",
   currentStep: SELECT_SOURCE_SCHEMA,
 });
 const changeHistorySourceSchemaState = reactive<ChangeHistorySourceSchema>({
@@ -140,10 +156,13 @@ const stepTabList = computed(() => {
   return [
     { title: t("database.sync-schema.select-source-schema") },
     { title: t("database.sync-schema.select-target-databases") },
+    // { title: "选择同步对象" },
+    // { title: "预览 DDL 语句" },
   ];
 });
 
 const allowNext = computed(() => {
+  return true;
   if (state.currentStep === SELECT_SOURCE_SCHEMA) {
     if (state.sourceSchemaType === "SCHEMA_HISTORY_VERSION") {
       return (
