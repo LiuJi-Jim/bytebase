@@ -34,6 +34,7 @@ import {
 const batchComposeDatabaseGroup = async (
   databaseGroupList: DatabaseGroup[]
 ): Promise<ComposedDatabaseGroup[]> => {
+  const projectStore = useProjectV1Store();
   const composedDatabaseGroupMap: Map<string, ComposedDatabaseGroup> =
     new Map();
   const expressions: string[] = [];
@@ -43,7 +44,7 @@ const batchComposeDatabaseGroup = async (
     const [projectName, databaseGroupName] = getProjectNameAndDatabaseGroupName(
       databaseGroup.name
     );
-    const project = await useProjectV1Store().getOrFetchProjectByName(
+    const project = projectStore.getProjectByName(
       `${projectNamePrefix}${projectName}`
     );
 
