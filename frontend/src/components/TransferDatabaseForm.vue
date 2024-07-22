@@ -145,8 +145,8 @@ const { project } = useProjectByName(toRef(props, "projectName"));
 onMounted(async () => {
   state.loading = true;
   // Prepare all databases for transfer.
-  await databaseStore.searchDatabases({
-    filter: "",
+  await databaseStore.fetchDatabaseList({
+    parent: "workspaces/*",
   });
   state.loading = false;
 });

@@ -68,9 +68,8 @@ onMounted(async () => {
   const project = await useProjectV1Store().getOrFetchProjectByName(
     props.projectName
   );
-  const filters = [`instance = "instances/-"`, `project = "${project.name}"`];
-  await databaseStore.searchDatabases({
-    filter: filters.join(" && "),
+  await databaseStore.fetchDatabaseList({
+    parent: project.name,
   });
 
   await Promise.all(

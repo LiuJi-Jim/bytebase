@@ -21,8 +21,9 @@ import type {
   Database,
   UpdateDatabaseRequest,
   DiffSchemaRequest,
-  SearchDatabasesRequest,
   BatchUpdateDatabasesRequest,
+  ListDatabasesRequest,
+  ListInstanceDatabasesRequest,
 } from "@/types/proto/v1/database_service";
 import type { InstanceResource } from "@/types/proto/v1/instance_service";
 import { extractDatabaseResourceName, hasProjectPermissionV2 } from "@/utils";
@@ -83,8 +84,18 @@ export const useDatabaseV1Store = defineStore("database_v1", () => {
       }
     }
   };
-  const searchDatabases = async (args: Partial<SearchDatabasesRequest>) => {
-    const { databases } = await databaseServiceClient.searchDatabases({
+  const fetchDatabaseList = async (args: Partial<ListDatabasesRequest>) => {
+    const { databases } = await databaseServiceClient.listDatabases({
+      pageSize: DEFAULT_DATABASE_PAGE_SIZE,
+      ...args,
+    });
+    const composedDatabaseList = await upsertDatabaseMap(databases);
+    return composedDatabaseList;
+  };
+  const fetchInstanceDatabaseList = async (
+    args: Partial<ListInstanceDatabasesRequest>
+  ) => {
+    const { databases } = await databaseServiceClient.listInstanceDatabases({
       pageSize: DEFAULT_DATABASE_PAGE_SIZE,
       ...args,
     });
@@ -226,8 +237,9 @@ export const useDatabaseV1Store = defineStore("database_v1", () => {
     reset,
     removeCacheByInstance,
     databaseList,
-    searchDatabases,
     syncDatabase,
+    fetchDatabaseList,
+    fetchInstanceDatabaseList,
     databaseListByUser,
     databaseListByProject,
     databaseListByInstance,
@@ -247,7 +259,7 @@ export const useDatabaseV1Store = defineStore("database_v1", () => {
 });
 
 export const useSearchDatabaseV1List = (
-  args: MaybeRef<Partial<SearchDatabasesRequest>>
+  args: MaybeRef<Partial<ListDatabasesRequest>>
 ) => {
   const store = useDatabaseV1Store();
   const ready = ref(false);
@@ -256,7 +268,7 @@ export const useSearchDatabaseV1List = (
     () => JSON.stringify(unref(args)),
     () => {
       ready.value = false;
-      store.searchDatabases(unref(args)).then((list) => {
+      store.fetchDatabaseList(unref(args)).then((list) => {
         databaseList.value = list;
         ready.value = true;
       });

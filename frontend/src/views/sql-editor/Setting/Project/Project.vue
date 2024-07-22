@@ -112,7 +112,9 @@ const hideDrawer = () => {
 
 onMounted(() => {
   // prepare for transferring databases
-  useDatabaseV1Store().searchDatabases({});
+  useDatabaseV1Store().fetchDatabaseList({
+    parent: "workspaces/*",
+  });
 
   if (route.hash === "#add") {
     state.detail.show = true;

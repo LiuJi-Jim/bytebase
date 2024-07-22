@@ -173,8 +173,8 @@ const syncSchema = async () => {
   try {
     await instanceV1Store.syncInstance(instance.value).then(() => {
       databaseStore.removeCacheByInstance(instance.value.name);
-      databaseStore.searchDatabases({
-        filter: `instance = "${instance.value.name}"`,
+      databaseStore.fetchInstanceDatabaseList({
+        parent: instance.value.name,
       });
     });
     // Clear the db schema metadata cache entities.

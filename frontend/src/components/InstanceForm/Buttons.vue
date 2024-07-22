@@ -281,8 +281,8 @@ const doCreate = async () => {
     await useGracefulRequest(async () => {
       const createdInstance =
         await instanceV1Store.createInstance(instanceCreate);
-      useDatabaseV1Store().searchDatabases({
-        filter: `instance = "${createdInstance.name}"`,
+      useDatabaseV1Store().fetchInstanceDatabaseList({
+        parent: createdInstance.name,
       });
 
       if (props.onCreated) {

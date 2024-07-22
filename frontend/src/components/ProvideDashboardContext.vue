@@ -54,13 +54,9 @@ const fetchInstances = async (project: string) => {
 };
 
 const fetchDatabases = async (project: string) => {
-  const filters = [`instance = "instances/-"`];
   // If `projectId` is provided in the route, filter the database list by the project.
-  if (project) {
-    filters.push(`project = "${projectNamePrefix}${project}"`);
-  }
-  await databaseStore.searchDatabases({
-    filter: filters.join(" && "),
+  await databaseStore.fetchDatabaseList({
+    parent: project ? `projects/${project}` : "workspaces/*",
   });
 };
 
