@@ -1,4 +1,3 @@
-import { uniq } from "lodash-es";
 import { defineStore } from "pinia";
 import { computed, reactive, ref, unref, watch, markRaw } from "vue";
 import { databaseServiceClient } from "@/grpcweb";
@@ -16,7 +15,6 @@ import {
   UNKNOWN_ID,
   unknownInstanceResource,
 } from "@/types";
-import { DEFAULT_PROJECT_NAME } from "@/types";
 import type {
   Database,
   UpdateDatabaseRequest,
@@ -322,16 +320,6 @@ export const batchComposeDatabase = async (databaseList: Database[]) => {
   const projectV1Store = useProjectV1Store();
   const environmentV1Store = useEnvironmentV1Store();
 
-  const distinctProjectList = uniq(databaseList.map((db) => db.project));
-
-  await Promise.all(
-    distinctProjectList.map((project) => {
-      if (project === DEFAULT_PROJECT_NAME) {
-        return;
-      }
-      return projectV1Store.getOrFetchProjectByName(project);
-    })
-  );
   return databaseList.map((db) => {
     const composed = db as ComposedDatabase;
     const { databaseName, instance } = extractDatabaseResourceName(db.name);
