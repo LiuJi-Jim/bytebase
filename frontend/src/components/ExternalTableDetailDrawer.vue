@@ -1,3 +1,90 @@
+<script lang="ts" setup>
+import { computedAsync } from "@vueuse/core";
+import { computed, ref, reactive } from "vue";
+import {
+  DatabaseV1Name,
+  InstanceV1Name,
+  Drawer,
+  DrawerContent,
+  EnvironmentV1Name,
+  ProjectV1Name,
+  SearchBox,
+} from "@/components/v2";
+import { useDatabaseV1Store, useDBSchemaV1Store } from "@/store";
+import { DEFAULT_PROJECT_NAME, defaultProject } from "@/types";
+import { TableMetadata } from "@/types/proto/v1/database_service";
+import {
+  hasProjectPermissionV2,
+  hasSchemaProperty,
+  isDatabaseV1Queryable,
+} from "@/utils";
+import ColumnDataTable from "./ColumnDataTable/index.vue";
+import { SQLEditorButtonV1 } from "./DatabaseDetail";
+
+interface LocalState {
+  columnNameSearchKeyword: string;
+  partitionTableNameSearchKeyword: string;
+}
+
+const props = defineProps<{
+  show: boolean;
+  // Format: /databases/:databaseName
+  databaseName: string;
+  schemaName: string;
+  externalTableName: string;
+}>();
+
+defineEmits(["dismiss"]);
+
+const dbSchemaStore = useDBSchemaV1Store();
+const databaseV1Store = useDatabaseV1Store();
+const state = reactive<LocalState>({
+  columnNameSearchKeyword: "",
+  partitionTableNameSearchKeyword: "",
+});
+
+const isFetchingTableMetadata = ref(false);
+const externalTable = computedAsync(
+  async () => {
+    const { schemaName, externalTableName } = props;
+    if (!externalTableName) {
+      return;
+    }
+    const externalTableList = await dbSchemaStore.getOrFetchExternalTableList(
+      database.value.name,
+      schemaName
+    );
+    return externalTableList.find((t) => t.name === externalTableName);
+  },
+  undefined,
+  {
+    evaluating: isFetchingTableMetadata,
+  }
+);
+
+const database = computed(() => {
+  return databaseV1Store.getDatabaseByName(props.databaseName);
+});
+
+const instanceEngine = computed(() => {
+  return database.value.instanceResource.engine;
+});
+
+const allowQuery = computed(() => {
+  if (database.value.project === DEFAULT_PROJECT_NAME) {
+    return hasProjectPermissionV2(defaultProject(), "bb.databases.query");
+  }
+  return isDatabaseV1Queryable(database.value);
+});
+
+const getTableName = (tableName: string) => {
+  if (hasSchemaProperty(instanceEngine.value)) {
+    return `"${props.schemaName}"."${tableName}"`;
+  }
+  return tableName;
+};
+</script>
+
 <template>
   <Drawer :show="show" @close="$emit('dismiss')">
     <DrawerContent :title="$t('database.foreign-table-detail')">
@@ -124,90 +211,3 @@
     </DrawerContent>
   </Drawer>
 </template>
-
-<script lang="ts" setup>
-import { computedAsync } from "@vueuse/core";
-import { computed, ref, reactive } from "vue";
-import {
-  DatabaseV1Name,
-  InstanceV1Name,
-  Drawer,
-  DrawerContent,
-  EnvironmentV1Name,
-  ProjectV1Name,
-  SearchBox,
-} from "@/components/v2";
-import { useDatabaseV1Store, useDBSchemaV1Store } from "@/store";
-import { DEFAULT_PROJECT_NAME, defaultProject } from "@/types";
-import { TableMetadata } from "@/types/proto/v1/database_service";
-import {
-  hasProjectPermissionV2,
-  hasSchemaProperty,
-  isDatabaseV1Queryable,
-} from "@/utils";
-import ColumnDataTable from "./ColumnDataTable/index.vue";
-import { SQLEditorButtonV1 } from "./DatabaseDetail";
-
-interface LocalState {
-  columnNameSearchKeyword: string;
-  partitionTableNameSearchKeyword: string;
-}
-
-const props = defineProps<{
-  show: boolean;
-  // Format: /databases/:databaseName
-  databaseName: string;
-  schemaName: string;
-  externalTableName: string;
-}>();
-
-defineEmits(["dismiss"]);
-
-const dbSchemaStore = useDBSchemaV1Store();
-const databaseV1Store = useDatabaseV1Store();
-const state = reactive<LocalState>({
-  columnNameSearchKeyword: "",
-  partitionTableNameSearchKeyword: "",
-});
-
-const isFetchingTableMetadata = ref(false);
-const externalTable = computedAsync(
-  async () => {
-    const { schemaName, externalTableName } = props;
-    if (!externalTableName) {
-      return;
-    }
-    const externalTableList = await dbSchemaStore.getOrFetchExternalTableList(
-      database.value.name,
-      schemaName
-    );
-    return externalTableList.find((t) => t.name === externalTableName);
-  },
-  undefined,
-  {
-    evaluating: isFetchingTableMetadata,
-  }
-);
-
-const database = computed(() => {
-  return databaseV1Store.getDatabaseByName(props.databaseName);
-});
-
-const instanceEngine = computed(() => {
-  return database.value.instanceResource.engine;
-});
-
-const allowQuery = computed(() => {
-  if (database.value.project === DEFAULT_PROJECT_NAME) {
-    return hasProjectPermissionV2(defaultProject(), "bb.databases.query");
-  }
-  return isDatabaseV1Queryable(database.value);
-});
-
-const getTableName = (tableName: string) => {
-  if (hasSchemaProperty(instanceEngine.value)) {
-    return `"${props.schemaName}"."${tableName}"`;
-  }
-  return tableName;
-};
-</script>
